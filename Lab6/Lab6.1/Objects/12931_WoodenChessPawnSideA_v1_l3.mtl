@@ -1,0 +1,72 @@
+# Blender 4.4.3 MTL File: 'None'
+# www.blender.org
+
+newmtl 01___Default.001
+Ns 10.000005
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd 10586_Chess Board_v1_diffuse.JPG
+
+newmtl 12931_WoodenChessPawnSideA.001
+Ns 36.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.540000 0.540000 0.540000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd 12931_WoodenChessPawnSideA_diffuse.jpg
+
+newmtl 12932_WoodenChessKingSideB.001
+Ns 36.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.540000 0.540000 0.540000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd 12932_WoodenChessKingSideB_Diffuse.jpg
+
+newmtl 12934_WoodenChessRookSideB.001
+Ns 36.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.540000 0.540000 0.540000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd 12934_WoodenChessRookSideB_Diffuse.jpg
+
+newmtl 12936_WoodenChessNightSideB.001
+Ns 36.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.540000 0.540000 0.540000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd 12936_WoodenChessNightSideB_diffuse.jpg
+
+newmtl WoodenChessKingSideA.001
+Ns 36.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.540000 0.540000 0.540000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd 12926_WoodenChessKingSideA_Diffuse.jpg
+
+newmtl WoodenChessQueenSideB.001
+Ns 36.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.540000 0.540000 0.540000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd 12927_WoodenChessQueenSideA_diffuse.jpg
