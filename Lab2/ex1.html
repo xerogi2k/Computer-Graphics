@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Просмотр картинок</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: white;
+      font-family: sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    #menu {
+      background: #ddd;
+      padding: 10px;
+      user-select: none;
+      position: relative;
+      height: 40px;
+    }
+
+    #submenu {
+      display: none;
+      position: absolute;
+      background: #eee;
+      border: 1px solid #bbb;
+      padding: 5px;
+      top: 40px;
+      left: 10px;
+      z-index: 10;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    #viewer {
+      width: 100%;
+      height: calc(100vh - 40px);
+      position: relative;
+      overflow: hidden;
+      background: white;
+      cursor: grab;
+    }
+
+    #image-container {
+      position: absolute;
+      will-change: transform;
+      display: inline-block;
+    }
+
+/* покрытие для PNG*/
+    .checkerboard {
+      background-image:
+        linear-gradient(45deg, #ccc 25%, transparent 25%),
+        linear-gradient(-45deg, #ccc 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ccc 75%),
+        linear-gradient(-45deg, transparent 75%, #ccc 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    }
+
+    img {
+      display: block;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="menu">
+    <button id="fileButton">File</button>
+    <div id="submenu">
+      <label style="cursor: pointer;">
+        Open
+        <input type="file" id="fileInput" accept="image/png,image/jpeg,image/bmp">
+      </label>
+    </div>
+  </div>
+
+  <div id="viewer">
+    <div id="image-container"></div>
+  </div>
+
+  <script>
+    const fileButton = document.getElementById('fileButton');
+    const submenu = document.getElementById('submenu');
+    const fileInput = document.getElementById('fileInput');
+    const imageContainer = document.getElementById('image-container');
+    const viewer = document.getElementById('viewer');
+
+    let imgElement = null;
+    let offset = { x: 0, y: 0 };
+    let isDragging = false;
+    let dragStart = { x: 0, y: 0 };
+    let imageStart = { x: 0, y: 0 };
+
+// Блок Open после нажатия на File
+    fileButton.addEventListener('click', () => {
+      submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+    });
+
+// Закрытие подменю при нажатии на пустое место
+    document.addEventListener('click', (e) => {
+      if (!fileButton.contains(e.target) && !submenu.contains(e.target)) {
+        submenu.style.display = 'none';
+      }
+    });
+
+// Читаем файл как url, создаем dom и src, а после загрузки вызываем loadimage 
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const img = new Image();
+        img.onload = () => {
+          loadImage(img, file.type === 'image/png');
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+// очистка контейнера, вычисление масштаба для viewer, подсчет масштаба, проверка на png 
+    function loadImage(img, isPNG) {
+      imageContainer.innerHTML = '';
+      imageContainer.style.background = '';
+      imageContainer.classList.remove('checkerboard');
+
+      imgElement = img;
+
+      const maxW = viewer.clientWidth;
+      const maxH = viewer.clientHeight;
+      const scale = Math.min(
+        maxW / img.width,
+        maxH / img.height,
+        1 
+      );
+
+      const displayWidth = img.width * scale;
+      const displayHeight = img.height * scale;
+
+      img.style.width = `${displayWidth}px`;
+      img.style.height = `${displayHeight}px`;
+
+      if (isPNG) {
+        imageContainer.classList.add('checkerboard');
+      }
+
+      imageContainer.appendChild(img);
+      imageContainer.style.width = `${displayWidth}px`;
+      imageContainer.style.height = `${displayHeight}px`;
+
+      offset.x = (maxW - displayWidth) / 2;
+      offset.y = (maxH - displayHeight) / 2;
+      updateTransform();
+    }
+
+    function updateTransform() {
+      imageContainer.style.transform = `translate(${offset.x}px, ${offset.y}px)`;
+    }
+
+    // Логика Drag-and-Drop
+    viewer.addEventListener('mousedown', (e) => {
+      if (!imgElement) return;
+
+      isDragging = true;
+      viewer.style.cursor = 'grabbing';
+      dragStart = { x: e.clientX, y: e.clientY };
+      imageStart = { ...offset };
+    });
+
+    viewer.addEventListener('mousemove', (e) => {
+      if (!isDragging || !imgElement) return;
+
+      offset.x = imageStart.x + (e.clientX - dragStart.x);
+      offset.y = imageStart.y + (e.clientY - dragStart.y);
+      updateTransform();
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        viewer.style.cursor = 'grab';
+      }
+    });
+
+// Обработка изменения окна
+    window.addEventListener('resize', () => {
+      if (!imgElement) return;
+      loadImage(imgElement, imageContainer.classList.contains('checkerboard'));
+    });
+  </script>
+
+</body>
+</html>

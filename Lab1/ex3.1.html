@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Отрисовка отрезка</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: sans-serif;
+    }
+    canvas {
+      border: 1px solid black;
+      margin-top: 10px;
+    }
+    label {
+      margin: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Отрисовка отрезка (алгоритм Брезенхема)</h2>
+  <div>
+    <label>X1: <input type="number" id="x1" value="0"></label>
+    <label>Y1: <input type="number" id="y1" value="0"></label>
+    <label>X2: <input type="number" id="x2" value="400"></label>
+    <label>Y2: <input type="number" id="y2" value="300"></label>
+    <label>Цвет: <input type="color" id="color" value="#ff0000"></label>
+    <button onclick="drawLine()">Построить линию</button>
+  </div>
+  <canvas id="canvas" width="400" height="300"></canvas>
+  <script src="main3.1.js"></script>
+</body>
+</html>

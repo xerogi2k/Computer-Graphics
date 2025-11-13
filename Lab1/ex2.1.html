@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Грузовик с Drag-and-Drop</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #87CEEB;
+            overflow: hidden;
+        }
+
+        .draggable {
+            position: absolute;
+            cursor: move;
+            transition: transform 0.1s;
+        }
+
+        .truck {
+            position: absolute;
+            left: 200px;
+            top: 200px;
+        }
+
+        /* Кабина */
+        .cab {
+            width: 120px;
+            height: 100px;
+            background: #FF4444;
+            border-radius: 10px 0 0 10px;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+        /* Прицеп */
+        .trailer {
+            width: 180px;
+            height: 120px;
+            background: #FF4444;
+            border-radius: 10px 10px 10px 0;
+            position: absolute;
+            left: 120px;
+            top: -20px;
+        }
+
+        /* Дверь и окно */
+        .door {
+            width: 40px;
+            height: 70px;
+            background: #666;
+            border-radius: 3px;
+            position: absolute;
+            left: 15px;
+            top: 15px;
+        }
+
+        .window {
+            width: 30px;
+            height: 25px;
+            background: #B0E0E6;
+            border-radius: 2px;
+            position: absolute;
+            top: 10px;
+            left: 5px;
+        }
+
+        /* Колеса */
+        .wheel {
+            width: 50px;
+            height: 50px;
+            background: #333;
+            border-radius: 50%;
+            position: absolute;
+        }
+
+        .wheel-hub {
+            width: 25px;
+            height: 25px;
+            background: #888;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .wheel1 {
+            left: 45px;
+            top: 100px;
+        }
+
+        .wheel2 {
+            left: 200px;
+            top: 100px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Обёртка грузовика -->
+    <div class="draggable truck" id="truck">
+        <div class="cab">
+            <div class="door">
+                <div class="window"></div>
+            </div>
+        </div>
+        <div class="trailer"></div>
+        <div class="wheel wheel1">
+            <div class="wheel-hub"></div>
+        </div>
+        <div class="wheel wheel2">
+            <div class="wheel-hub"></div>
+        </div>
+    </div>
+
+    <script>
+        // Реализация Drag-and-Drop
+        const truck = document.getElementById('truck');
+        let offset = { x: 0, y: 0 };
+        let isDragging = false;
+
+        truck.addEventListener('mousedown', function(e) {
+            isDragging = true;
+            const rect = truck.getBoundingClientRect();
+            offset.x = e.clientX - rect.left;
+            offset.y = e.clientY - rect.top;
+            truck.style.zIndex = 1000;
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            truck.style.left = `${e.clientX - offset.x}px`;
+            truck.style.top = `${e.clientY - offset.y}px`;
+        });
+
+        document.addEventListener('mouseup', function() {
+            isDragging = false;
+            truck.style.zIndex = '';
+        });
+    </script>
+</body>
+</html>

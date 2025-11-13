@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Лабиринт с освещением</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: Arial, sans-serif;
+        }
+        canvas { 
+            display: block; 
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        #title {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 24px;
+            text-shadow: 0 0 10px rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="title">Трехмерный Лабиринт</div>
+    <div id="info">
+        Позиция: (0, 0)<br>
+        Направление: 0°
+    </div>
+    <div id="instructions">
+        Управление: W A S D - движение, <- -> - вращение
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Основные константы и переменные
+        const MAZE_SIZE = 16;
+        const CELL_SIZE = 3;
+        const WALL_HEIGHT = 3;
+        const PLAYER_HEIGHT = 1.6;
+        const PLAYER_SPEED = 0.9;
+        const ROTATION_SPEED = 0.03;
+
+        // Переменные сцены
+        let scene, camera, renderer;
+        let walls = [];
+        let playerPosition = { x: CELL_SIZE * 1.5, z: CELL_SIZE * 1.5 };
+        let playerDirection = 0;
+        let keyState = {};
+        let clock = new THREE.Clock();
+
+        // Инициализация сцены
+        function init() {
+            // Создаем сцену
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB); // Небесно-голубой фон
+            
+            // Создаем камеру
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.y = PLAYER_HEIGHT;
+            
+            // Создаем рендерер
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+            
+            // Добавляем освещение
+            addLighting();
+            
+            // Генерируем лабиринт
+            generateMaze();
+            
+            // Добавляем обработчики событий
+            setupEventListeners();
+            
+            // Запускаем анимацию
+            animate();
+        }
+
+        // Добавление освещения
+        function addLighting() {
+            // Основной источник света (привязан к игроку)
+            const playerLight = new THREE.PointLight(0xffffff, 1.5, 20);
+            playerLight.position.set(0, 2, 0);
+            camera.add(playerLight);
+            
+            // Окружающее освещение
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
+            scene.add(ambientLight);
+            
+            // Направленный свет (имитация солнца)
+            const sunLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            sunLight.position.set(10, 20, 10);
+            sunLight.castShadow = true;
+            scene.add(sunLight);
+        }
+
+        // Генерация лабиринта
+        function generateMaze() {
+            // Инициализация карты лабиринта
+            const maze = Array(MAZE_SIZE).fill().map(() => Array(MAZE_SIZE).fill(1));
+            
+            // Алгоритм генерации лабиринта (DFS)
+            const stack = [];
+            const startX = 1, startZ = 1;
+            maze[startZ][startX] = 0;
+            stack.push([startX, startZ]);
+            
+            const directions = [[0, -2], [2, 0], [0, 2], [-2, 0]];
+            
+            while (stack.length > 0) {
+                const [x, z] = stack.pop();
+                
+                // Случайным образом перемешиваем направления
+                const shuffledDirections = [...directions].sort(() => Math.random() - 0.5);
+                
+                for (const [dx, dz] of shuffledDirections) {
+                    const nx = x + dx;
+                    const nz = z + dz;
+                    
+                    if (nx > 0 && nx < MAZE_SIZE-1 && nz > 0 && nz < MAZE_SIZE-1 && maze[nz][nx] === 1) {
+                        maze[z + dz/2][x + dx/2] = 0;
+                        maze[nz][nx] = 0;
+                        stack.push([nx, nz]);
+                    }
+                }
+            }
+            
+            // Создаем выход в лабиринте
+            maze[MAZE_SIZE-2][MAZE_SIZE-1] = 0;
+            
+            // Строим лабиринт на основе карты
+            buildMaze(maze);
+        }
+
+        // Построение лабиринта на основе карты
+        function buildMaze(maze) {
+            // Создаем материалы
+            const wallMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x2E8B57,
+                shininess: 30
+            });
+            
+            const floorMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x8B4513,
+                shininess: 20
+            });
+            
+            const ceilingMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x708090,
+                shininess: 25
+            });
+            
+            // Создаем пол
+            const floorGeometry = new THREE.PlaneGeometry(MAZE_SIZE * CELL_SIZE, MAZE_SIZE * CELL_SIZE);
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = 0;
+            floor.receiveShadow = true;
+            scene.add(floor);
+            
+            // Создаем потолок
+            const ceilingGeometry = new THREE.PlaneGeometry(MAZE_SIZE * CELL_SIZE, MAZE_SIZE * CELL_SIZE);
+            const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
+            ceiling.rotation.x = Math.PI / 2;
+            ceiling.position.y = WALL_HEIGHT;
+            ceiling.receiveShadow = true;
+            scene.add(ceiling);
+            
+            // Создаем стены
+            for (let z = 0; z < MAZE_SIZE; z++) {
+                for (let x = 0; x < MAZE_SIZE; x++) {
+                    if (maze[z][x] === 1) {
+                        const wallGeometry = new THREE.BoxGeometry(CELL_SIZE, WALL_HEIGHT, CELL_SIZE);
+                        const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+                        wall.position.set(x * CELL_SIZE, WALL_HEIGHT / 2, z * CELL_SIZE);
+                        wall.castShadow = true;
+                        wall.receiveShadow = true;
+                        scene.add(wall);
+                        walls.push(wall);
+                    }
+                }
+            }
+            
+            // Добавляем цель (выход)
+            const exitGeometry = new THREE.BoxGeometry(CELL_SIZE, 0.5, 0.1);
+            const exitMaterial = new THREE.MeshPhongMaterial({ color: 0xFFD700 });
+            const exit = new THREE.Mesh(exitGeometry, exitMaterial);
+            exit.position.set((MAZE_SIZE - 0.5) * CELL_SIZE, 1, (MAZE_SIZE - 1) * CELL_SIZE);
+            scene.add(exit);
+        }
+
+        // Проверка коллизий
+        function checkCollision(x, z) {
+            // Рассчитываем размер игрока для коллизий
+            const playerRadius = CELL_SIZE * 0.3;
+            
+            // Проверяем границы лабиринта
+            if (x < playerRadius || x > MAZE_SIZE * CELL_SIZE - playerRadius ||
+                z < playerRadius || z > MAZE_SIZE * CELL_SIZE - playerRadius) {
+                return true;
+            }
+            
+            // Проверяем столкновения со стенами
+            for (const wall of walls) {
+                const wallX = wall.position.x;
+                const wallZ = wall.position.z;
+                
+                const dx = Math.abs(x - wallX);
+                const dz = Math.abs(z - wallZ);
+                
+                // Если игрок слишком близко к стене
+                if (dx < CELL_SIZE/2 + playerRadius && dz < CELL_SIZE/2 + playerRadius) {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
+        // Обработка управления
+        function handleControls() {
+            const delta = clock.getDelta();
+            let moveX = 0;
+            let moveZ = 0;
+            
+            // Вращение
+            if (keyState['ArrowLeft']) {
+                playerDirection += ROTATION_SPEED * 60 * delta;
+            }
+            if (keyState['ArrowRight']) {
+                playerDirection -= ROTATION_SPEED * 60 * delta;
+            }
+            
+            // Движение вперед/назад
+            if (keyState['w'] || keyState['W']) {
+                moveX = Math.sin(playerDirection) * PLAYER_SPEED * 60 * delta;
+                moveZ = Math.cos(playerDirection) * PLAYER_SPEED * 60 * delta;
+            }
+            if (keyState['s'] || keyState['S']) {
+                moveX = -Math.sin(playerDirection) * PLAYER_SPEED * 60 * delta;
+                moveZ = -Math.cos(playerDirection) * PLAYER_SPEED * 60 * delta;
+            }
+            
+            // Движение вбок
+            if (keyState['a'] || keyState['A']) {
+                moveX += Math.sin(playerDirection - Math.PI/2) * PLAYER_SPEED * 30 * delta;
+                moveZ += Math.cos(playerDirection - Math.PI/2) * PLAYER_SPEED * 30 * delta;
+            }
+            if (keyState['d'] || keyState['D']) {
+                moveX += Math.sin(playerDirection + Math.PI/2) * PLAYER_SPEED * 30 * delta;
+                moveZ += Math.cos(playerDirection + Math.PI/2) * PLAYER_SPEED * 30 * delta;
+            }
+            
+            // Проверка коллизий и обновление позиции
+            const newX = playerPosition.x + moveX;
+            const newZ = playerPosition.z + moveZ;
+            
+            if (!checkCollision(newX, playerPosition.z)) {
+                playerPosition.x = newX;
+            }
+            if (!checkCollision(playerPosition.x, newZ)) {
+                playerPosition.z = newZ;
+            }
+            
+            // Обновление позиции камеры
+            camera.position.x = playerPosition.x;
+            camera.position.z = playerPosition.z;
+            camera.rotation.y = playerDirection;
+            
+            // Обновление информации
+            updateInfo();
+        }
+
+        // Обновление информации о позиции
+        function updateInfo() {
+            const info = document.getElementById('info');
+            const x = Math.floor(playerPosition.x / CELL_SIZE);
+            const z = Math.floor(playerPosition.z / CELL_SIZE);
+            const degrees = Math.round((playerDirection * 180 / Math.PI + 360) % 360);
+            
+            info.innerHTML = `Позиция: (${x}, ${z})<br>Направление: ${degrees}°`;
+            
+            // Проверка на выход из лабиринта
+            if (x === MAZE_SIZE-1 && z === MAZE_SIZE-1) {
+                info.innerHTML += `<br><strong>ПОЗДРАВЛЯЕМ! ВЫ НАШЛИ ВЫХОД!</strong>`;
+            }
+        }
+
+        // Настройка обработчиков событий
+        function setupEventListeners() {
+            // Обработка клавиатуры
+            window.addEventListener('keydown', (e) => {
+                keyState[e.key] = true;
+            });
+            
+            window.addEventListener('keyup', (e) => {
+                keyState[e.key] = false;
+            });
+            
+            // Обработка изменения размера окна
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // Анимационный цикл
+        function animate() {
+            requestAnimationFrame(animate);
+            handleControls();
+            renderer.render(scene, camera);
+        }
+
+        // Запуск приложения
+        init();
+    </script>
+</body>
+</html>
